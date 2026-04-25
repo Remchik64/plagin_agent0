@@ -5,18 +5,17 @@ from helpers.extension import Extension
 from agent import LoopData
 from helpers import log
 
-PI_SERVER = os.environ.get("PI_SERVER", "http://host.docker.internal:7860")
 RECALL_TIMEOUT = 15
 DEFAULT_THRESHOLD = 0.4
 DEFAULT_LIMIT = 5
 
 
-async def search_pi(query: str, limit: int = DEFAULT_LIMIT, threshold: float = DEFAULT_THRESHOLD) -> list:
+async def search_pi(pi_server: str, session_id: str, query: str, limit: int = DEFAULT_LIMIT, threshold: float = DEFAULT_THRESHOLD) -> list:
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
             r = await client.get(
-                f"{PI_SERVER}/api/v1/memory/search",
-                params={"query": query, "limit": limit, "session_id": "agent_zero"}
+                f"{pi_server}/api/v1/memory/search",
+                params={"query": query, "limit": limit, "session_id": session_id}
             )
             if r.status_code == 200:
                 return [
@@ -42,6 +41,12 @@ class PIRecall(Extension):
         if not user_msg or len(user_msg) < 3:
             return
 
+        # Read config from env (updated by _10_pi_sync on each monologue start)
+        pi_server = os.environ.get("PI_SERVER", "http://host.docker.internal:7860")
+        session_id = os.environ.get("PI_SESSION_ID", "agent_zero")
+        threshold = float(os.environ.get("PI_RECALL_THRESHOLD", str(DEFAULT_THRESHOLD)))
+        limit = int(os.environ.get("PI_RECALL_LIMIT", str(DEFAULT_LIMIT)))
+
         log_item = self.agent.context.log.log(
             type="util",
             heading="Searching Pure Intellect memory...",
@@ -49,7 +54,7 @@ class PIRecall(Extension):
 
         try:
             results = await asyncio.wait_for(
-                search_pi(user_msg, limit=DEFAULT_LIMIT, threshold=DEFAULT_THRESHOLD),
+                search_pi(pi_server, session_id, user_msg, limit=limit, threshold=threshold),
                 timeout=RECALL_TIMEOUT
             )
         except asyncio.TimeoutError:

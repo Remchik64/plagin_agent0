@@ -1,16 +1,24 @@
 import os
+import asyncio
 import httpx
 from helpers.extension import Extension
 from agent import LoopData
 
-PI_SERVER = os.environ.get("PI_SERVER", "http://host.docker.internal:7860")
 MIN_LENGTH = 20  # Don't save very short responses
 
 
 class PIMemorize(Extension):
 
-    def execute(self, loop_data: LoopData = LoopData(), **kwargs):
+    async def execute(self, loop_data: LoopData = LoopData(), **kwargs):
         if not self.agent:
+            return
+
+        # Read config from env (updated by _10_pi_sync on each monologue start)
+        pi_server = os.environ.get("PI_SERVER", "http://host.docker.internal:7860")
+        session_id = os.environ.get("PI_SESSION_ID", "agent_zero")
+        memorize_enabled = os.environ.get("PI_MEMORIZE_ENABLED", "true").lower() == "true"
+
+        if not memorize_enabled:
             return
 
         # Get the agent's last response
@@ -26,25 +34,19 @@ class PIMemorize(Extension):
             return
 
         # Save conversation fragment to PI in background (fire and forget)
-        import asyncio
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(self._save_to_pi(user_msg, response))
-        except Exception:
-            pass
+        asyncio.ensure_future(self._save_to_pi(pi_server, session_id, user_msg, response))
 
-    async def _save_to_pi(self, user_msg: str, response: str):
+    async def _save_to_pi(self, pi_server: str, session_id: str, user_msg: str, response: str):
         try:
             fragment = f"Q: {user_msg[:200]}\nA: {response[:300]}" if user_msg else response[:400]
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.post(
-                    f"{PI_SERVER}/api/v1/memory/fact",
+                    f"{pi_server}/api/v1/memory/fact",
                     json={
                         "text": fragment,
                         "importance": 0.5,
                         "is_anchor": False,
-                        "session_id": "agent_zero",
+                        "session_id": session_id,
                         "metadata": {"area": "fragments", "source": "auto"}
                     }
                 )

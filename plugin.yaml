@@ -1,16 +1,16 @@
 name: _pure_intellect
 title: Pure Intellect Memory
-description: Connects Agent Zero to Pure Intellect server for persistent hierarchical memory. Replaces FAISS with PI API for unlimited, cross-session memory with semantic search.
-version: 1.0.0
+description: Connects Agent Zero to Pure Intellect server for persistent hierarchical memory. Replaces built-in memory with PI API for unlimited, cross-session memory with semantic search.
+version: 1.1.0
 author: Alexander
-homepage: https://github.com/yourusername/pure-intellect
+homepage: https://github.com/Remchik64/pure-intellect
 settings_sections:
   - agent
 per_project_config: false
 per_agent_config: true
 
 default_config:
-  pi_server: "http://localhost:7860"
+  pi_server: "http://host.docker.internal:7860"
   recall_enabled: true
   recall_threshold: 0.4
   recall_limit: 5
