@@ -1,0 +1,14 @@
+# Pure Intellect server URL
+# For Agent Zero in Docker on Windows/Mac:
+#   pi_server: "http://host.docker.internal:7860"
+# For Agent Zero in Docker on Linux:
+#   pi_server: "http://172.17.0.1:7860"
+# For Agent Zero running locally (no Docker):
+#   pi_server: "http://localhost:7860"
+pi_server: "http://host.docker.internal:7860"
+
+recall_enabled: true
+recall_threshold: 0.4
+recall_limit: 5
+memorize_enabled: true
+session_id: "agent_zero"

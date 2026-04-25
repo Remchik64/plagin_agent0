@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+.toggle-1
+.toggle-0
+*.log
